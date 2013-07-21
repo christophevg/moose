@@ -66,13 +66,11 @@ uint8_t xbee_get_response(uint8_t type, uint8_t id, uint8_t ch1, uint8_t ch2) {
   return 0xFF; // TODO: do this differently ?
 }
 
-void xbee_transmit(char* ch) {
+void xbee_transmit(uint8_t* ch, uint8_t length) {
   xbee_send_char(0x7E);   // start frame
   
   xbee_send_char(0x00);   // length MSB
-  
-  int8_t length = strlen(ch);
-  
+
   xbee_send_char(length+14);   // length LSB = payload length + 14 "overhead"
 
   xbee_send_char(0x10);  // Frame type = transmit
@@ -101,4 +99,8 @@ void xbee_transmit(char* ch) {
   }
   
   xbee_send_char(0xFF - (sum & 0xFF) ); // checksum
+}
+
+void xbee_transmit_string(char* string) {
+  xbee_transmit(string, strlen(string));
 }
