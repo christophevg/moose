@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <avr/io.h>
 
+#include "avr.h"
 #include "serial.h"
 
 // trick to make printf "print" to serial<->UART
@@ -13,14 +14,14 @@ static FILE mystdout = FDEV_SETUP_STREAM(serial_putchar, NULL, _FDEV_SETUP_WRITE
 
 void serial_init(void) {
   // set pin 4 on port B to 0 = input = MISO
-  DDRB &= ~(1 << PB4);
+  avr_clear_bit(DDRB, PB4);
   // set pin 0 on port D to 0 = input = RX
-  DDRD &= ~(1 << PD0);
+  avr_clear_bit(DDRD, PD0);
 
   // USART Baud rate: 9600
   UBRR0H = MYUBRR >> 8;
   UBRR0L = MYUBRR;
-  UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+  UCSR0B = (1 << RXEN0) | (1 << TXEN0);
     
   stdout = &mystdout; // required for printf init
 }

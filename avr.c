@@ -5,6 +5,8 @@
 
 #include <avr/io.h>
 
+#include "avr.h"
+
 void avr_init(void) {
   // 1 = output, 0 = input
   // default = all output
@@ -33,7 +35,7 @@ uint16_t avr_adc_read(uint8_t ch) {
 
   // start single convertion
   // write ’1′ to ADSC
-  ADCSRA |= (1 << ADSC);
+  avr_set_bit(ADCSRA, ADSC);
 
   // wait for conversion to complete
   // ADSC becomes ’0′ again
@@ -41,7 +43,7 @@ uint16_t avr_adc_read(uint8_t ch) {
   while( ADCSRA & (1 << ADSC) );
 
   // clear ADIF by writing one to it
-  ADCSRA |= (1 << ADIF);
+  avr_set_bit(ADCSRA, ADIF);
 
   return (ADC);
 }
