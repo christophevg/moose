@@ -47,3 +47,21 @@ uint16_t avr_adc_read(uint8_t ch) {
 
   return (ADC);
 }
+
+uint8_t avr_get_vcc(void) {
+  uint8_t vcc;
+
+  // set the Band Gap voltage as the ADC input
+  ADMUX = 0xE; 
+
+  // TODO: figure this out ;-)
+  ADCSRA = (1 << ADEN) | (1 << ADATE) | (1 << ADIE) | (1 << ADSC) | 5;
+
+  // read 8 bit value 
+  vcc = ADC >> 2;
+
+  // reset to normal ADC references
+  avr_adc_init();
+
+  return vcc;
+}
