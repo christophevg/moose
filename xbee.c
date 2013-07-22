@@ -102,5 +102,6 @@ void xbee_transmit(uint8_t* ch, uint8_t length) {
 }
 
 void xbee_transmit_string(char* string) {
+  // TODO: convert char* to uint8* to remove warnings
   xbee_transmit(string, strlen(string));
 }
