@@ -15,3 +15,6 @@ uint8_t  xbee_get_response(uint8_t type, uint8_t id, uint8_t ch1, uint8_t ch2);
 
 void     xbee_transmit(uint8_t* bytes, uint8_t length);
 void     xbee_transmit_string(char* string);
+
+void     xbee_sleep(void);
+void     xbee_wakeup(void);

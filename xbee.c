@@ -8,6 +8,7 @@
 #include <avr/io.h>
 #include <util/delay.h>
 
+#include "avr.h"
 #include "xbee.h"
 
 void xbee_send_char(char c) {
@@ -30,6 +31,17 @@ void xbee_wait_for_association(void) {
     xbee_at('A', 'I', id);
     value = xbee_get_response(0x88, id, 'A', 'I');
   }
+}
+
+void xbee_sleep(void) {
+  // power down XBee by setting its sleep pin high
+  avr_set_bit(PORTD, XBEE_SLEEP);
+}
+
+void xbee_wakeup(void) {
+  // power up XBee by setting its sleep pin high
+  avr_clear_bit(PORTD, XBEE_SLEEP);
+  xbee_wait_for_association();
 }
 
 void xbee_at(uint8_t ch1, uint8_t ch2, uint8_t id) {
