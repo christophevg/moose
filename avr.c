@@ -4,6 +4,7 @@
 // elementary functions for handling the AVR/ATMEGA MCU
 
 #include <avr/io.h>
+#include <util/delay.h>
 
 #include "avr.h"
 
@@ -53,6 +54,8 @@ uint8_t avr_get_vcc(void) {
 
   // set the Band Gap voltage as the ADC input
   ADMUX = 0xE; 
+
+  _delay_ms(50);
 
   // TODO: figure this out ;-)
   ADCSRA = (1 << ADEN) | (1 << ADATE) | (1 << ADIE) | (1 << ADSC) | 5;
