@@ -49,19 +49,19 @@ uint16_t avr_adc_read(uint8_t ch) {
   return (ADC);
 }
 
-uint8_t avr_get_vcc(void) {
-  uint8_t vcc;
+uint16_t avr_get_vcc(void) {
+  uint16_t vcc;
 
-  // set the Band Gap voltage as the ADC input
-  ADMUX = 0xE; 
+  // taken from http://forum.arduino.cc/index.php/topic,38119.0.html
+  // TODO: understand this ;-)
+  // REFS1 REFS0          --> 0 1, AVcc internal ref.
+  // MUX3 MUX2 MUX1 MUX0  --> 1110 1.1V (VBG)
+  ADMUX = (0 << REFS1) | (1 << REFS0) |
+          (0 << ADLAR) | (1 << MUX3)  | (1 << MUX2) | (1 << MUX1) | (0 << MUX0);
+  ADCSRA |= _BV( ADSC );
+  while( ( (ADCSRA & (1<<ADSC)) != 0 ) );
 
-  _delay_ms(50);
-
-  // TODO: figure this out ;-)
-  ADCSRA = (1 << ADEN) | (1 << ADATE) | (1 << ADIE) | (1 << ADSC) | 5;
-
-  // read 8 bit value 
-  vcc = ADC >> 2;
+  vcc = ADC;
 
   // reset to normal ADC references
   avr_adc_init();

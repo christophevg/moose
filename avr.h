@@ -10,4 +10,4 @@
 void     avr_init(void);
 void     avr_adc_init(void);
 uint16_t avr_adc_read(uint8_t ch);
-uint8_t  avr_get_vcc(void);
+uint16_t avr_get_vcc(void);
