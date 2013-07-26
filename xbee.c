@@ -111,6 +111,10 @@ void xbee_transmit(uint8_t* ch, uint8_t length) {
   }
   
   xbee_send_char(0xFF - (sum & 0xFF) ); // checksum
+
+  // make sure everything is transmitted
+  // TODO: how to do this CLEANLY?
+  _delay_ms(100);
 }
 
 void xbee_transmit_string(char* string) {
