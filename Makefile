@@ -4,8 +4,8 @@ TARGET = main
 # MCU name
 MCU = atmega168
 
-# processor frequency.
-F_CPU = 18000000
+# processor frequency depends on project
+# F_CPU = 18000000
 
 # output format. (can be srec, ihex, binary)
 FORMAT = ihex

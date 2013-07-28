@@ -3,7 +3,7 @@
 
 // functions to access an XBee S2/ZB from AVR
 
-#define XBEE_SLEEP 4
+#define XBEE_SLEEP 2
 
 void     xbee_send_char(char c);
 uint8_t  xbee_get_char(void);

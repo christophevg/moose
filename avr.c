@@ -21,7 +21,7 @@ void avr_adc_init(void) {
   ADMUX = (1 << REFS0);
 
   // ADC Enable and prescaler of 128
-  // 18000000/128 = 140625
+  // 8000000/128 = 50K < 62500 < 200K
   ADCSRA = (1<<ADEN) | (1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0);
 }
 
