@@ -1,17 +1,25 @@
-# each module needs a main.c starting point
-TARGET = main
+# each module needs a starting point/target
+ifndef TARGET
+	TARGET = main
+endif
 
-# MCU name
-MCU = atmega168
+# MCU name (avrdude profile)
+ifndef MCU
+	MCU = atmega328p
+endif
 
 # processor frequency depends on project
-# F_CPU = 18000000
+ifndef F_CPU
+	F_CPU = 18000000
+endif
+
+# additional sources to be compiled
+ifndef MORE_SRC
+	MORE_SRC =
+endif
 
 # output format. (can be srec, ihex, binary)
 FORMAT = ihex
-
-# no default additional sources -> needs to be provided by including Makefile
-# MORE_SRC = 
 
 SRC = $(TARGET).c $(MORE_SRC)
 OBJ = $(SRC:.c=.o)
