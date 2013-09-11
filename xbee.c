@@ -39,7 +39,7 @@ void xbee_sleep(void) {
 }
 
 void xbee_wakeup(void) {
-  // power up XBee by setting its sleep pin high
+  // power up XBee by setting its sleep pin low
   avr_clear_bit(PORTD, XBEE_SLEEP);
   xbee_wait_for_association();
 }
