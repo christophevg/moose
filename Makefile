@@ -39,6 +39,8 @@ CSTANDARD = -std=gnu99
 
 # providing the CPU's frequency
 CDEFS = -DF_CPU=$(F_CPU)UL
+# providing the MCU
+CDEFS += -DMCU=$(MCU)
 
 # compiler options
 #  -O*:          optimization level

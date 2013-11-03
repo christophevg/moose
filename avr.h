@@ -16,6 +16,10 @@ uint16_t avr_get_vcc(void);
 #define F_CPU  18000000
 #endif
 
+#define QUOTE(name) #name
+#define STR(macro) QUOTE(macro)
+#define MCU_NAME STR(MCU)
+
 // mapping of functions -> actual ports
 #if MCU == atmega1284p
 
