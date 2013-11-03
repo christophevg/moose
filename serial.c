@@ -13,14 +13,15 @@
 static FILE mystdout = FDEV_SETUP_STREAM(serial_putchar, NULL, _FDEV_SETUP_WRITE);
 
 void serial_init(void) {
-  // set pin 4 on port B to 0 = input = MISO
-  avr_clear_bit(DDRB, PB4);
-  // set pin 0 on port D to 0 = input = RX
-  avr_clear_bit(DDRD, PD0);
+  // make MISO pin input pin by clearing it
+  avr_clear_bit(MISO_PORT, MISO_PIN);
+  // make RX pin input pin by clearing it
+  avr_clear_bit(RX_PORT, RX_PIN);
 
-  // USART Baud rate: 9600
+  // set USART Baud rate
   UBRR0H = MYUBRR >> 8;
   UBRR0L = MYUBRR;
+  // enable receiver and transmitter
   UCSR0B = (1 << RXEN0) | (1 << TXEN0);
     
   stdout = &mystdout; // required for printf init
