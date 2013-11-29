@@ -24,11 +24,13 @@
 #define XB_TX_AT            0x08
 #define XB_RX_AT            0x88
 
+#define XB_COORDINATOR      0x00000000
 #define XB_TX_NO_RESPONSE   0x00      // id to use when no response wanted
 #define XB_BROADCAST        0xFFFE    // nw_address for broadcast
 #define XB_NW_ADDR_UNKNOWN  0xFFFE    //             or unknown
 #define XB_MAX_RADIUS       0x00
 #define XB_OPT_NO_ACK       0x01
+#define XB_OPT_NONE         0x00
 #define XB_OPT_APS_ENC      0x20
 #define XB_OPT_EXT_TIMEOUT  0x40
 
