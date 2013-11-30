@@ -4,6 +4,11 @@
 #ifndef __AVR_H
 #define __AVR_H
 
+// this is a little trick to be able to use externally defined variables
+// to use it, add one more #define <name-of-var>_name = STR(<name-of-var>)
+#define QUOTE(name) #name
+#define STR(macro) QUOTE(macro)
+
 #ifndef F_CPU     // should come in from the Makefile
 #define F_CPU  18000000
 #endif

@@ -46,6 +46,9 @@ CSTANDARD = -std=gnu99
 CDEFS = -DF_CPU=$(F_CPU)UL
 # providing the MCU
 CDEFS += -DMCU=$(MCU)
+#ifdef MORE_CDEFS
+	CDEFS += $(MORE_CDEFS)
+#endif
 
 # compiler options
 #  -O*:          optimization level

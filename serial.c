@@ -9,10 +9,8 @@
 static FILE mystdout = FDEV_SETUP_STREAM(serial_putchar, NULL, _FDEV_SETUP_WRITE);
 
 void serial_init(void) {
-  // make MISO pin input pin by clearing it
-  avr_clear_bit(MISO_PORT, MISO_PIN);
   // make RX pin input pin by clearing it
-  avr_clear_bit(RX_PORT, RX_PIN);
+  avr_clear_bit(SERIAL_RX_PORT, SERIAL_RX_PIN);
 
   // Thanks: http://www.appelsiini.net/2011/simple-usart-with-avr-libc
   UBRRsH = UBRRH_VALUE;
@@ -30,7 +28,7 @@ void serial_init(void) {
   stdout = &mystdout; // required for printf init
 }
 
-static int serial_putchar(char c, FILE *stream) {
+int serial_putchar(char c, FILE *stream) {
   if (c == '\n') serial_putchar('\r', stream); // add a CR before the LF
 
   loop_until_bit_is_set(UCSRsA, UDREs);
