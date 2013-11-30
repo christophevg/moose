@@ -18,6 +18,11 @@ ifndef MORE_SRC
 	MORE_SRC =
 endif
 
+# changing the programming protocol
+ifndef AVRDUDE_PROGRAMMER
+	AVRDUDE_PROGRAMMER = jtag2isp
+endif
+
 # output format. (can be srec, ihex, binary)
 FORMAT = ihex
 
@@ -77,7 +82,6 @@ LDFLAGS += $(MATH_LIB)
 # LDFLAGS += -lm -lprintf_flt -Wl,-u,vfprintf -Wl,-Map=$(TARGET).map
 
 # avrdude
-AVRDUDE_PROGRAMMER = jtag2isp
 AVRDUDE_PORT = usb:5a:cb
 AVRDUDE_WRITE_FLASH = -U flash:w:$(TARGET).hex
 AVRDUDE_FLAGS = -p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER)
