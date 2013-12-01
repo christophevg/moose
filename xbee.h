@@ -10,8 +10,17 @@
 
 #include <avr/io.h>
 #include <util/delay.h>
+#include <stdlib.h>
 
+#include "bool.h"
 #include "avr.h"
+
+// compute baud rate setting
+#ifndef BAUD
+#define BAUD 9600
+#endif
+
+#include <util/setbaud.h>
 
 // magic bytes
 
@@ -48,13 +57,44 @@
 // XBEE is controled via USART, some AVR devices have multiple USARTs
 // the identifying 0 or 1 is replace by an 'x'
 
+#define XBEE_ON_USART1_NAME STR(XBEE_ON_USART1)
+
 #ifdef XBEE_ON_USART1     // USART1 (e.g. on the ATMEGA1284p)
+#error "NOK"
+// port + pin
+#define XBEE_RX_PORT RX1_PORT
+#define XBEE_RX_PIN  RX1_PIN
+// registers
+#define UBRRxH UBRR1H
+#define UBRRxL UBRR1L  
+#define UCSRxA UCSR1A
+#define U2Xx   U2X1
+#define UCSRxC UCSR1C
+#define UCSRxB UCSR1B
+#define UCSZx1 UCSZ11
+#define UCSZx0 UCSZ10
+#define RXENx  RXEN1
+#define TXENx  TXEN1
 #define UCSRxA UCSR1A
 #define UDREx  UDRE1
 #define RXCx   RXC1
 #define UDRx   UDR1
 #define TXCx   TXC1
 #else                     // USART0 (default)
+// port + pin
+#define XBEE_RX_PORT RX0_PORT
+#define XBEE_RX_PIN  RX0_PIN
+// registers
+#define UBRRxH UBRR0H
+#define UBRRxL UBRR0L  
+#define UCSRxA UCSR0A
+#define U2Xx   U2X0
+#define UCSRxC UCSR0C
+#define UCSRxB UCSR0B
+#define UCSZx1 UCSZ01
+#define UCSZx0 UCSZ00
+#define RXENx  RXEN0
+#define TXENx  TXEN0
 #define UCSRxA UCSR0A
 #define UDREx  UDRE0
 #define RXCx   RXC0
@@ -64,7 +104,8 @@
 
 // pin mapping
 
-#define XBEE_SLEEP 2
+#define XBEE_SLEEP_PORT PORTD
+#define XBEE_SLEEP_PIN  4
 
 // TX struct
 typedef struct {
@@ -72,7 +113,7 @@ typedef struct {
   uint8_t  id;
   uint64_t address;
   uint16_t nw_address;
-  uint8_t  radius
+  uint8_t  radius;
   uint8_t  options;
   uint8_t *data;
 } xbee_tx_t;
@@ -90,16 +131,18 @@ typedef struct {
 typedef void (*xbee_rx_handler_t)(xbee_rx_t *frame);
 
 // AT response handler type
-typedef void (*xbee_at_handler_t)();
+typedef void (*xbee_at_handler_t)(uint8_t status, uint8_t respsonse);
 
 // functions
+
+void xbee_init(void);
 
 void xbee_sleep(void);
 void xbee_wakeup(void);
 void xbee_wait_for_association(void);
 
 void xbee_send(xbee_tx_t *frame);
-void xbee_receive();
+void xbee_receive(void);
 void xbee_on_receive(xbee_rx_handler_t handler);
 
 #endif
