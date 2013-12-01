@@ -60,7 +60,8 @@
 #define XBEE_ON_USART1_NAME STR(XBEE_ON_USART1)
 
 #ifdef XBEE_ON_USART1     // USART1 (e.g. on the ATMEGA1284p)
-#error "NOK"
+// interrupt
+#define USARTx_RX_vect USART1_RX_vect
 // port + pin
 #define XBEE_RX_PORT RX1_PORT
 #define XBEE_RX_PIN  RX1_PIN
@@ -81,6 +82,8 @@
 #define UDRx   UDR1
 #define TXCx   TXC1
 #else                     // USART0 (default)
+// interrupt
+#define USARTx_RX_vect USART0_RX_vect
 // port + pin
 #define XBEE_RX_PORT RX0_PORT
 #define XBEE_RX_PIN  RX0_PIN

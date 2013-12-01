@@ -6,53 +6,28 @@
 #include "xbee.h"
 
 #include <stdio.h>
-#include <string.h>
 #include <avr/interrupt.h>
 
-// one RX packet handler
-static xbee_rx_handler_t rx_handler;
-
-// QnD solution, pre-allocating 256 handlers :-(
-static xbee_at_handler_t at_handlers[0xFF];
-static uint8_t           at_handler_id = 0;
-
-// global AI response
-static uint8_t ai_response;
-
-// forward declarations of "private" functions
-static void    xbee_send_byte(uint8_t);
-static void    xbee_wait_until_tx_complete(void);
-static uint8_t xbee_receive_byte(void);
-static bool    xbee_data_available(void);
-static void    xbee_receive_rx(uint8_t);
-static void    xbee_send_at(uint8_t, uint8_t, xbee_at_handler_t);
-static void    xbee_receive_at(uint8_t);
-static void    xbee_check_ai(void);
-static bool    xbee_ai_success(void);
-static void    xbee_handle_ai_response(uint8_t, uint8_t);
-
-// TODO: move to serial
-// internal buffering
-
-static uint8_t buffer[256];
-static uint8_t head = 0;
-static uint8_t tail = 0;
-
-static void xbee_accept_byte(uint8_t byte) {
-  buffer[tail++] = byte;
-}
-
-// interrupt vector for handling reception of a single byte
-ISR (USART0_RX_vect) {
-  xbee_accept_byte(UDR0);
-}
-
-void xbee_buffer_info(void) {
-  printf("buffer: head=%i, tail=%i\n", head, tail);
-}
+// forward declarations of "private" functions to avoid puttin them on top ;-)
+static void    _send_byte(uint8_t);
+static void    _wait_until_tx_complete(void);
+static uint8_t _receive_byte(void);
+static bool    _data_available(void);
+static void    _receive_rx(uint8_t);
+static void    _send_at(uint8_t, uint8_t, xbee_at_handler_t);
+static void    _receive_at(uint8_t);
+static void    _check_ai(void);
+static bool    _ai_success(void);
+static void    _handle_ai_response(uint8_t, uint8_t);
+static void    _start_tx_checksum(void);
+static void    _start_rx_checksum(void);
+static void    _send_checksum(void);
+static bool    _rx_checksum_isvalid(void);
 
 // public interface
 
+// initialization, uses generic register names that should be defined in the
+// header file.
 void xbee_init(void) {
   // make RX pin input pin by clearing it
   avr_clear_bit(XBEE_RX_PORT, XBEE_RX_PIN);
@@ -74,134 +49,126 @@ void xbee_init(void) {
   UCSRxB |= (1 << RXCIE0);            // enable interrupt
 }
 
+// power down XBee by setting its sleep pin high
 void xbee_sleep(void) {
-  // power down XBee by setting its sleep pin high
   avr_set_bit(XBEE_SLEEP_PORT, XBEE_SLEEP_PIN);
 }
 
+
+// power up XBee by setting its sleep pin low
 void xbee_wakeup(void) {
-  // power up XBee by setting its sleep pin low
   avr_clear_bit(XBEE_SLEEP_PORT, XBEE_SLEEP_PIN);
   xbee_wait_for_association();
 }
 
+// wrapper around the AI AT command check
 void xbee_wait_for_association(void) {
   do {
-    _delay_ms(10);    // really needed :-(
-    xbee_check_ai();
+    _delay_ms(10);    // really needed and it _must_ be here :-(
+    _check_ai();
     xbee_receive();
-  } while( ! xbee_ai_success() );
+  } while( ! _ai_success() );
 }
 
-static long checksum = 0;
-
-static void xbee_start_checksum(void) {
-  checksum = 0;
-}
-
-static uint8_t xbee_get_checksum(void) {
-  return 0xFF - (checksum & 0xFF);
-}
-
+// sends a frame
 void xbee_send(xbee_tx_t *frame) {
-  xbee_send_byte(XB_FRAME_START);
+  _send_byte(XB_FRAME_START);
 
   // split out size + 14 bytes of protocol overhead into MSByte en LSByte
-  xbee_send_byte((frame->size + 14) >> 8);
-  xbee_send_byte(frame->size + 14);
+  _send_byte((frame->size + 14) >> 8);
+  _send_byte(frame->size + 14);
 
-  xbee_start_checksum();
-  xbee_send_byte(XB_TX_PACKET);       // frame type = transmit
+  _start_tx_checksum();
+  {
+    _send_byte(XB_TX_PACKET);       // frame type = transmit
   
-  xbee_send_byte(frame->id);
+    _send_byte(frame->id);
 
-  // 64-bit address (MSB -> LSB)
-  for(uint8_t i=56;i>0;i-=8) {
-    xbee_send_byte(frame->address >> i);
+    // 64-bit address (MSB -> LSB)
+    for(uint8_t i=56;i>0;i-=8) {
+      _send_byte(frame->address >> i);
+    }
+    _send_byte(frame->address);
+
+    // 16-bit network address
+    _send_byte(frame->nw_address >> 8);
+    _send_byte(frame->nw_address     );
+
+    _send_byte(frame->radius);   // broadcast radius
+    _send_byte(frame->options);  // options
+
+    // data
+    for(int8_t i=0;i<frame->size;i++) {
+      _send_byte(frame->data[i]);
+    }
   }
-  xbee_send_byte(frame->address);
-
-  // 16-bit network address
-  xbee_send_byte(frame->nw_address >> 8);
-  xbee_send_byte(frame->nw_address     );
-
-  xbee_send_byte(frame->radius);   // broadcast radius
-  xbee_send_byte(frame->options);  // options
-
-  // data
-  for(int8_t i=0;i<frame->size;i++) {
-    xbee_send_byte(frame->data[i]);
-  }
-
-  xbee_send_byte( xbee_get_checksum() );
+  _send_checksum();
   
-  xbee_wait_until_tx_complete();
+  _wait_until_tx_complete();
 }
 
+// generic function to handle incoming packets.
+// deals with common bytes and dispatches to helper functions to handle
+// different known packet types
 void xbee_receive(void) {
-  while( xbee_data_available() ) {
-    while( xbee_receive_byte() != XB_FRAME_START ) {} // wait for start of frame
+  // keep processing incoming data
+  while( _data_available() ) {
+    while( _receive_byte() != XB_FRAME_START ) {} // wait for start of frame
 
     // receive common to all packets: size and type
-    uint8_t size = (xbee_receive_byte() << 8) | (xbee_receive_byte() & 0xFF);
-    uint8_t type = xbee_receive_byte();
+    uint8_t size = (_receive_byte() << 8) | (_receive_byte() & 0xFF);
+    uint8_t type = _receive_byte();
 
     switch( type ) {
-      case XB_RX_PACKET: xbee_receive_rx(size); break;
-      case XB_RX_AT    : xbee_receive_at(size); break;
+      case XB_RX_PACKET: _receive_rx(size); break;
+      case XB_RX_AT    : _receive_at(size); break;
+      // TODO remove this printf by DEBUG/WARN/ERROR support (to come)
       default: printf("WARNING: received unsupported packet type: %i\n", type);
     }
   }
 }
 
+// RX packet support
+
+// one RX packet handler
+static xbee_rx_handler_t rx_handler;
+
+// function to register callback for the RX packet handler
 void xbee_on_receive(xbee_rx_handler_t handler) {
   rx_handler = handler;
 }
 
-// internals
-
-static void xbee_send_byte(uint8_t c) {
-  loop_until_bit_is_set(UCSRxA, UDREx); // wait until USART Data Reg Empty
-  UDRx = c;
-  checksum += c;
-}
-
-static void xbee_wait_until_tx_complete(void) {
-  loop_until_bit_is_set(UCSRxA, TXCx);  // wait until TX Complete
-}
-
-static uint8_t xbee_receive_byte(void) {
-  while( ! xbee_data_available() );
-  return buffer[head++];
-}
-
-static bool xbee_data_available(void) {
-  return head != tail;
-}
-
-static void xbee_receive_rx(uint8_t size) {
+// handling of received (data) packets, dispatched by xbee_receive
+static void _receive_rx(uint8_t size) {
   xbee_rx_t frame;
 
   uint64_t  address;
   uint16_t  nw_address;
   uint8_t   options;
   uint8_t  *data = (uint8_t*)malloc(size-12); // 12 bytes are protocol overhead
+
+  _start_rx_checksum();
+  {
+    // 64-bit address (MSB -> LSB)
+    for(uint8_t i=56; i>=0; i-=8) {
+      address |= _receive_byte() << i;
+    }
+
+    // 16bit network address
+    nw_address = (_receive_byte() << 8) | (_receive_byte());
+
+    options = _receive_byte();
   
-  // 64-bit address (MSB -> LSB)
-  for(uint8_t i=56; i>=0; i-=8) {
-    address |= xbee_receive_byte() << i;
+    // data
+    for(int8_t i=0; i<size-12; i++) {
+      data[i] = _receive_byte();
+    }
+  }  
+  if( ! _rx_checksum_isvalid() ) {
+    free(data);
+    return;
   }
 
-  // 16bit network address
-  nw_address = (xbee_receive_byte() << 8) | (xbee_receive_byte());
-
-  options = xbee_receive_byte();
-  
-  // data
-  for(int8_t i=0; i<size-12; i++) {
-    data[i] = xbee_receive_byte();
-  }
-  
   // create a frame and have it taken care of
   frame.size       = size;
   frame.address    = address;
@@ -212,57 +179,136 @@ static void xbee_receive_rx(uint8_t size) {
   rx_handler(&frame);
 }
 
-static void xbee_send_at(uint8_t ch1, uint8_t ch2, xbee_at_handler_t handler) {
+// AT command support
+
+// global AI response
+static uint8_t ai_response;
+
+// functional function to initiate an AI check
+static void _check_ai(void) {
+  ai_response = XB_AT_AI_SCANNING; // seems most logical non-ok default value
+  _send_at('A', 'I', _handle_ai_response);
+}
+
+// callback for handling AI responses
+static void _handle_ai_response(uint8_t status, uint8_t response) {
+  if(status == XB_AT_OK) {
+    ai_response = response;
+  }
+}
+
+// function to check for successful association
+static bool _ai_success(void) {
+  return ai_response == XB_AT_AI_SUCCESS;
+}
+
+// cyclic buffer of handlers for at responses
+static xbee_at_handler_t at_handlers[0xFF];
+static uint8_t           at_handler_id = 0;
+
+// generic function to send AT command, requires two command letters + handler
+// callback function
+static void _send_at(uint8_t ch1, uint8_t ch2, xbee_at_handler_t handler) {
   while(at_handler_id==0) { at_handler_id++; }
 
   // install response handler, id maps to entry in table
   at_handlers[at_handler_id] = handler;
 
   // send frame
-  xbee_send_byte(XB_FRAME_START);
+  _send_byte(XB_FRAME_START);
   
-  xbee_send_byte(0x00);          // MSB
-  xbee_send_byte(0x04);          // LSB (fixed length)
+  _send_byte(0x00);          // MSB
+  _send_byte(0x04);          // LSB (fixed length)
 
-  xbee_send_byte(XB_TX_AT);
-  xbee_send_byte(at_handler_id); // frame ID
-  xbee_send_byte(ch1);           // AT command char 1
-  xbee_send_byte(ch2);           // AT command char 2
-
-  long sum = XB_TX_AT + at_handler_id + ch1 + ch2;
-  xbee_send_byte(0xFF - (sum & 0xFF) ); // checksum
+  _start_tx_checksum();
+  {
+    _send_byte(XB_TX_AT);
+    _send_byte(at_handler_id); // frame ID
+    _send_byte(ch1);           // AT command char 1
+    _send_byte(ch2);           // AT command char 2
+  }
+  _send_checksum();
   
   at_handler_id++;
 }
 
-static void xbee_receive_at(uint8_t size) {
-  uint8_t id     = xbee_receive_byte();
-  xbee_receive_byte();
-  xbee_receive_byte();
-  uint8_t status = xbee_receive_byte();
-
+// generic handling of AT responses, dispatched by xbee_receive
+static void _receive_at(uint8_t size) {
   uint8_t data = 0;
-  if(size - 5 > 0) {  // command data available ?
-    data = xbee_receive_byte();
+  uint8_t status;
+  uint8_t id;
+
+  _start_rx_checksum();
+  {
+    id = _receive_byte();
+    _receive_byte();
+    _receive_byte();
+    status = _receive_byte();
+
+    if(size - 5 > 0) {  // command data available ?
+      data = _receive_byte();
+    }
   }
-
-  uint8_t checksum = xbee_receive_byte();
-  // TODO validate checksum
-
-  (*(at_handlers[id]))(status, data);
+  if( _rx_checksum_isvalid() ) {
+    (*(at_handlers[id]))(status, data);
+  }
 }
 
-static void xbee_check_ai(void) {
-  ai_response = XB_AT_AI_SCANNING; // seems most logical non-ok default value
-  xbee_send_at('A', 'I', xbee_handle_ai_response);
+// checksumming support
+
+static long tx_checksum = 0,
+            rx_checksum = 0;
+
+static void _start_tx_checksum(void) {
+  tx_checksum = 0;
 }
 
-static bool xbee_ai_success(void) {
-  return ai_response == XB_AT_AI_SUCCESS;
+static void _start_rx_checksum(void) {
+  rx_checksum = 0;
 }
+
+static void _send_checksum(void) {
+  _send_byte(0xFF - (tx_checksum & 0xFF));
+}
+
+static bool _rx_checksum_isvalid(void) {
+  _receive_byte();
+  // after receiving the checksum byte, the checksum should be zero
+  return rx_checksum == 0;
+}
+
+// technical (serial-oriented) functions to send one byte and wait until
+// transmission has finished receiving of one byte is done through interrupts
+// and an internal buffer see below
+
+static void _send_byte(uint8_t c) {
+  loop_until_bit_is_set(UCSRxA, UDREx); // wait until USART Data Reg Empty
+  UDRx = c;
+  tx_checksum += c;
+}
+
+static void _wait_until_tx_complete(void) {
+  loop_until_bit_is_set(UCSRxA, TXCx);  // wait until TX Complete
+}
+
+// internal buffering of received bytes using cyclic buffer and interrupts
+// TODO: overflow detection
+
+static uint8_t buffer[0xFF];  // another 256 bytes :-(
+static uint8_t head = 0;
+static uint8_t tail = 0;
+
+// interrupt vector for handling reception of a single byte
+ISR (USARTx_RX_vect) {
+  buffer[tail++] = UDRx;
+}
+
+static uint8_t _receive_byte(void) {
+  while( ! _data_available() );
   
-static void xbee_handle_ai_response(uint8_t status, uint8_t response) {
-  if(status == XB_AT_OK) {
-    ai_response = response;
-  }
+  return buffer[head++];
+}
+
+static bool _data_available(void) {
+  return head != tail;
 }
