@@ -276,7 +276,11 @@ static void _send_checksum(void) {
 static bool _rx_checksum_isvalid(void) {
   _receive_byte();
   // after receiving the checksum byte, the checksum should be zero
-  return rx_checksum == 0;
+  if( rx_checksum != 0 ) {
+    printf("ERROR: invalid checksum");
+    return FALSE;
+  }
+  return TRUE;
 }
 
 // technical (serial-oriented) functions to send one byte and wait until
