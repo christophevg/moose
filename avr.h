@@ -9,6 +9,10 @@
 #define QUOTE(name) #name
 #define STR(macro) QUOTE(macro)
 
+// always provide (complete compile-time enabled) debugging facilities
+// checks DEBUG variable, which can come from outside
+#include "debug.h"
+
 #ifndef F_CPU     // should come in from the Makefile
 #define F_CPU  18000000
 #endif
