@@ -300,8 +300,8 @@ static void _receive_modem(uint8_t size) {
 
 // checksumming support
 
-static long tx_checksum = 0,
-            rx_checksum = 0;
+static uint8_t tx_checksum = 0,
+               rx_checksum = 0;
 
 static void _start_tx_checksum(void) {
   tx_checksum = 0;
@@ -312,14 +312,14 @@ static void _start_rx_checksum(void) {
 }
 
 static void _send_checksum(void) {
-  _send_byte(0xFF - (tx_checksum & 0xFF));
+  _send_byte(0xFF - tx_checksum);
 }
 
 static bool _rx_checksum_isvalid(void) {
   _receive_byte();
   // after receiving the checksum byte, the checksum should be zero
-  if( rx_checksum != 0 ) {
-    debug_printf("ERROR: invalid checksum");
+  if( rx_checksum != 0xFF ) {
+    debug_printf("ERROR: invalid checksum = %i\n", rx_checksum);
     return FALSE;
   }
   return TRUE;
@@ -341,6 +341,13 @@ static void _wait_until_tx_complete(void) {
 
 // internal buffering of received bytes using cyclic buffer and interrupts
 // TODO: overflow detection
+// TODO: fix (weird) bug
+//                                       vvvvvvvvvvvvvvvvvvvvv
+// buffer: head = 252 tail = 6 : 126 0 6 136 103 65 73 0 0 134 126 0 6 136 ...
+// WARNING: received unsupported packet type: 12
+// buffer: head = 255 tail = 16 : 12 103 65 73 0 0 134 126 0 6 136 ...
+//                                ^^^^^^^^^^^^^^^^^^^^
+// 136 is at position 255 in buffer and gets read as 12, sometimes 0,...
 
 static uint8_t buffer[0xFF];  // another 256 bytes :-(
 static uint8_t head = 0;
@@ -354,6 +361,8 @@ ISR (USARTx_RX_vect) {
 // blocking !
 static uint8_t _receive_byte(void) {
   while( ! _data_available() );
+
+  rx_checksum += buffer[head];
 
   return buffer[head++];
 }
