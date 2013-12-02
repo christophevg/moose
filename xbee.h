@@ -27,6 +27,7 @@
 // internal
 #define XB_FRAME_START      0x7E
 #define XB_TX_PACKET        0x10
+#define XB_MODEM_STATUS     0x8A
 
 // externally useable
 #define XB_RX_PACKET        0x90

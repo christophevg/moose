@@ -24,6 +24,7 @@ static void    _start_rx_checksum(void);
 static void    _send_checksum(void);
 static bool    _rx_checksum_isvalid(void);
 static void    _buffer_info(void);
+static void    _receive_modem(uint8_t size);
 
 // public interface
 
@@ -122,8 +123,9 @@ void xbee_receive(void) {
     uint8_t type = _receive_byte();
 
     switch( type ) {
-      case XB_RX_PACKET: _receive_rx(size); break;
-      case XB_RX_AT    : _receive_at(size); break;
+      case XB_RX_PACKET    : _receive_rx(size);    break;
+      case XB_RX_AT        : _receive_at(size);    break;
+      case XB_MODEM_STATUS : _receive_modem(size); break;
       // TODO remove this printf by DEBUG/WARN/ERROR support (to come)
       default: printf("WARNING: received unsupported packet type: %i\n", type);
     }
@@ -253,6 +255,18 @@ static void _receive_at(uint8_t size) {
   }
   if( _rx_checksum_isvalid() ) {
     (*(at_handlers[id]))(status, data);
+  }
+}
+
+// modem status support
+static void _receive_modem(uint8_t size) {
+  uint8_t status;
+  _start_rx_checksum();
+  {
+    status = _receive_byte();
+  }
+  if( _rx_checksum_isvalid() ) {
+    printf("modem status: %i\n", status);
   }
 }
 
