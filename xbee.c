@@ -5,13 +5,13 @@
 
 #include "xbee.h"
 
-#include <stdio.h>
 #include <avr/interrupt.h>
 
 // forward declarations of "private" functions to avoid puttin them on top ;-)
 static void    _send_byte(uint8_t);
 static void    _wait_until_tx_complete(void);
 static uint8_t _receive_byte(void);
+static uint8_t _peek_byte(void);
 static bool    _data_available(void);
 static void    _receive_rx(uint8_t);
 static void    _send_at(uint8_t, uint8_t, xbee_at_handler_t);
@@ -115,21 +115,36 @@ void xbee_send(xbee_tx_t *frame) {
 void xbee_receive(void) {
   // keep processing incoming data
   while( _data_available() ) {
-    // _buffer_info();
-    while( _receive_byte() != XB_FRAME_START ) {} // wait for start of frame
+    _buffer_info();
+    // skip to start of frame
+    while( _data_available() && _peek_byte() != XB_FRAME_START ) {
+      _receive_byte();
+    }
+
+    // actual next packet ? -> this happens when we skip trailing garbage
+    if( ! _data_available() ) {
+      debug_printf("WARNING: no next packet...\n");
+      break;
+    }
+
+    _receive_byte();  // received peeked frame start
 
     // receive common to all packets: size and type
     uint8_t size = (_receive_byte() << 8) | (_receive_byte() & 0xFF);
-    uint8_t type = _receive_byte();
+    uint8_t type = _peek_byte();
 
     switch( type ) {
-      case XB_RX_PACKET    : _receive_rx(size);    break;
-      case XB_RX_AT        : _receive_at(size);    break;
-      case XB_MODEM_STATUS : _receive_modem(size); break;
-      // TODO remove this printf by DEBUG/WARN/ERROR support (to come)
-      default: printf("WARNING: received unsupported packet type: %i\n", type);
+      case XB_RX_PACKET    : _receive_byte(); _receive_rx(size);    break;
+      case XB_RX_AT        : _receive_byte(); _receive_at(size);    break;
+      case XB_MODEM_STATUS : _receive_byte(); _receive_modem(size); break;
+
+      case XB_FRAME_START  : break; // this happens, let's not lose a packet
+
+      default:
+        debug_printf("WARNING: received unsupported packet type: %i\n", type);
     }
   }
+  debug_printf("no more data...\n");
 }
 
 // RX packet support
@@ -190,12 +205,14 @@ static uint8_t ai_response;
 
 // functional function to initiate an AI check
 static void _check_ai(void) {
+  debug_printf("sending AI\n");
   ai_response = XB_AT_AI_SCANNING; // seems most logical non-ok default value
   _send_at('A', 'I', _handle_ai_response);
 }
 
 // callback for handling AI responses
 static void _handle_ai_response(uint8_t status, uint8_t response) {
+  debug_printf("AI response = %i - %i\n", status, response);
   if(status == XB_AT_OK) {
     ai_response = response;
   }
@@ -259,14 +276,21 @@ static void _receive_at(uint8_t size) {
 }
 
 // modem status support
+
 static void _receive_modem(uint8_t size) {
+  // status is only used while debugging, so only include is if needed :-)
+#ifdef DEBUG
   uint8_t status;
+#endif
   _start_rx_checksum();
   {
-    status = _receive_byte();
+#ifdef DEBUG
+    status =
+#endif
+             _receive_byte();
   }
   if( _rx_checksum_isvalid() ) {
-    printf("modem status: %i\n", status);
+    debug_printf("modem status: %i\n", status);
   }
 }
 
@@ -291,7 +315,7 @@ static bool _rx_checksum_isvalid(void) {
   _receive_byte();
   // after receiving the checksum byte, the checksum should be zero
   if( rx_checksum != 0 ) {
-    printf("ERROR: invalid checksum");
+    debug_printf("ERROR: invalid checksum");
     return FALSE;
   }
   return TRUE;
@@ -318,25 +342,33 @@ static uint8_t buffer[0xFF];  // another 256 bytes :-(
 static uint8_t head = 0;
 static uint8_t tail = 0;
 
-static void _buffer_info(void) {
-  printf("buffer:\n  head = %i\n  tail = %i\n  content = ", head, tail);
-  for(uint8_t i=head;i!=tail;i++) {
-    printf("%i ", buffer[i]);
-  }
-  printf("\n");
-}
-
 // interrupt vector for handling reception of a single byte
 ISR (USARTx_RX_vect) {
   buffer[tail++] = UDRx;
 }
 
+// blocking !
 static uint8_t _receive_byte(void) {
   while( ! _data_available() );
-  
+
   return buffer[head++];
+}
+
+// blocking !
+static uint8_t _peek_byte(void) {
+  while( ! _data_available() );
+
+  return buffer[head];
 }
 
 static bool _data_available(void) {
   return head != tail;
+}
+
+static void _buffer_info(void) {
+  debug_printf("buffer: head = %i tail = %i : ", head, tail);
+  for(uint8_t i=head;i!=tail;i++) {
+    debug_printf("%i ", buffer[i]);
+  }
+  debug_printf("\n");
 }
