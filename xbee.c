@@ -23,6 +23,7 @@ static void    _start_tx_checksum(void);
 static void    _start_rx_checksum(void);
 static void    _send_checksum(void);
 static bool    _rx_checksum_isvalid(void);
+static void    _buffer_info(void);
 
 // public interface
 
@@ -113,6 +114,7 @@ void xbee_send(xbee_tx_t *frame) {
 void xbee_receive(void) {
   // keep processing incoming data
   while( _data_available() ) {
+    // _buffer_info();
     while( _receive_byte() != XB_FRAME_START ) {} // wait for start of frame
 
     // receive common to all packets: size and type
@@ -297,6 +299,14 @@ static void _wait_until_tx_complete(void) {
 static uint8_t buffer[0xFF];  // another 256 bytes :-(
 static uint8_t head = 0;
 static uint8_t tail = 0;
+
+static void _buffer_info(void) {
+  printf("buffer:\n  head = %i\n  tail = %i\n  content = ", head, tail);
+  for(uint8_t i=head;i!=tail;i++) {
+    printf("%i ", buffer[i]);
+  }
+  printf("\n");
+}
 
 // interrupt vector for handling reception of a single byte
 ISR (USARTx_RX_vect) {
