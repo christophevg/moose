@@ -134,9 +134,9 @@ void xbee_receive(void) {
     uint8_t type = _peek_byte();
 
     switch( type ) {
-      case XB_RX_PACKET    : _receive_byte(); _receive_rx(size);    break;
-      case XB_RX_AT        : _receive_byte(); _receive_at(size);    break;
-      case XB_MODEM_STATUS : _receive_byte(); _receive_modem(size); break;
+      case XB_RX_PACKET    : _receive_rx(size);    break;
+      case XB_RX_AT        : _receive_at(size);    break;
+      case XB_MODEM_STATUS : _receive_modem(size); break;
 
       case XB_FRAME_START  : break; // this happens, let's not lose a packet
 
@@ -168,6 +168,8 @@ static void _receive_rx(uint8_t size) {
 
   _start_rx_checksum();
   {
+    _receive_byte();                  // frame type is part of the checksum
+
     // 64-bit address (MSB -> LSB)
     for(uint8_t i=56; i>=0; i-=8) {
       address |= _receive_byte() << i;
@@ -255,18 +257,19 @@ static void _send_at(uint8_t ch1, uint8_t ch2, xbee_at_handler_t handler) {
 
 // generic handling of AT responses, dispatched by xbee_receive
 static void _receive_at(uint8_t size) {
-  uint8_t data = 0;
-  uint8_t status;
   uint8_t id;
+  uint8_t status;
+  uint8_t data = 0;
 
   _start_rx_checksum();
   {
+    _receive_byte();          // frame type is part of the checksum
     id = _receive_byte();
-    _receive_byte();
-    _receive_byte();
+    _receive_byte();          // first command character
+    _receive_byte();          // second
     status = _receive_byte();
 
-    if(size - 5 > 0) {  // command data available ?
+    if(size - 5 > 0) {        // command data available ?
       data = _receive_byte();
     }
   }
@@ -284,6 +287,7 @@ static void _receive_modem(uint8_t size) {
 #endif
   _start_rx_checksum();
   {
+    _receive_byte();        // frame type is part of the checksum
 #ifdef DEBUG
     status =
 #endif
