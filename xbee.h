@@ -54,8 +54,9 @@
 #define XBEE_ON_USART1_NAME STR(XBEE_ON_USART1)
 
 #ifdef XBEE_ON_USART1     // USART1 (e.g. on the ATMEGA1284p)
-// interrupt
+// interrupts
 #define USARTx_RX_vect USART1_RX_vect
+#define USARTx_TX_vect USART1_TX_vect
 // port + pin
 #define XBEE_RX_PORT RX1_PORT
 #define XBEE_RX_PIN  RX1_PIN
@@ -75,9 +76,12 @@
 #define RXCx   RXC1
 #define UDRx   UDR1
 #define TXCx   TXC1
+#define RXCIEx RXCIE1
+#define TXCIEx TXCIE1
 #else                     // USART0 (default)
-// interrupt
+// interruptss
 #define USARTx_RX_vect USART0_RX_vect
+#define USARTx_TX_vect USART0_TX_vect
 // port + pin
 #define XBEE_RX_PORT RX0_PORT
 #define XBEE_RX_PIN  RX0_PIN
@@ -97,6 +101,8 @@
 #define RXCx   RXC0
 #define UDRx   UDR0
 #define TXCx   TXC0
+#define RXCIEx RXCIE0
+#define TXCIEx TXCIE0
 #endif
 
 // pin mapping

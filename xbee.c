@@ -55,14 +55,14 @@ void xbee_init(void) {
   UCSRxB = _BV(RXENx)  | _BV(TXENx);  // Enable RX and TX
 
   // https://sites.google.com/site/qeewiki/books/avr-guide/usart  
-  UCSRxB |= (1 << RXCIE0);            // enable interrupt
+  UCSRxB |= (1 << RXCIEx);            // enable RX interrupt to accept bytes
+  UCSRxB |= (1 << TXCIEx);            // enable TX interrupt to see EOT
 }
 
 // power down XBee by setting its sleep pin high
 void xbee_sleep(void) {
   avr_set_bit(XBEE_SLEEP_PORT, XBEE_SLEEP_PIN);
 }
-
 
 // power up XBee by setting its sleep pin low
 void xbee_wakeup(void) {
@@ -73,10 +73,8 @@ void xbee_wakeup(void) {
 // wrapper around the AI AT command check
 void xbee_wait_for_association(void) {
   do {
-    // _delay_ms(10);
     _check_ai();
-    _receive_ai_response(100L);
-    // xbee_receive();
+    _receive_ai_response(100L); // typical delay is 40ms
   } while( ! _ai_success() );
 }
 
@@ -152,7 +150,7 @@ void xbee_receive(void) {
         debug_printf("WARNING: received unsupported packet type: %i\n", type);
     }
   }
-  // debug_printf("no more data...\n");
+  debug_printf("no more data...\n");
 }
 
 // RX packet support
@@ -216,28 +214,24 @@ static bool    ai_response_received;
 
 // functional function to initiate an AI check
 static void _check_ai(void) {
-  printf("sending AI\n");
+  debug_printf("sending AI\n");
   ai_response = XB_AT_AI_SCANNING; // seems most logical non-ok default value
   ai_response_received = FALSE;
   _send_at('A', 'I', _handle_ai_response);
 }
 
 static void _receive_ai_response(unsigned long timeout) {
-  unsigned long start = clock_get_millis();
-  printf("starting wait for ai response at %lu\n", start);
-    
-  while((clock_get_millis() - start) < timeout) {
+  unsigned long stop = clock_get_millis() + timeout;
+  debug_printf("starting wait for ai response at %lu\n", stop - timeout);
+  while(clock_get_millis() < stop) {
     xbee_receive();
     if( ai_response_received ) {
       debug_printf("got ai response at %lu\n", clock_get_millis());
       return;
     }
-    // printf("time = %lu = %lu till timeout\n",
-    //             clock_get_millis(),
-    //             (start + timeout) - clock_get_millis() );
   }
-  // timeout
-  debug_printf("timeout at %lu\n", clock_get_millis());
+  // timeout occured
+  debug_printf("timeout waiting for AI response (%lu)\n", clock_get_millis());
 }
 
 // callback for handling AI responses
@@ -282,6 +276,8 @@ static void _send_at(uint8_t ch1, uint8_t ch2, xbee_at_handler_t handler) {
   _send_checksum();
   
   at_handler_id++;
+
+  _wait_until_tx_complete();
 }
 
 // generic handling of AT responses, dispatched by xbee_receive
@@ -358,14 +354,23 @@ static bool _rx_checksum_isvalid(void) {
 // transmission has finished receiving of one byte is done through interrupts
 // and an internal buffer see below
 
+volatile static bool tx_in_progress;
+
+// interrupt vector for handling completion of transmission
+ISR (USARTx_TX_vect) {
+  tx_in_progress = FALSE;
+}
+
 static void _send_byte(uint8_t c) {
   loop_until_bit_is_set(UCSRxA, UDREx); // wait until USART Data Reg Empty
+  tx_in_progress = TRUE;
   UDRx = c;
   tx_checksum += c;
+  _wait_until_tx_complete();
 }
 
 static void _wait_until_tx_complete(void) {
-  loop_until_bit_is_set(UCSRxA, TXCx);  // wait until TX Complete
+  do {} while(tx_in_progress);
 }
 
 // internal buffering of received bytes using cyclic buffer and interrupts
@@ -378,9 +383,9 @@ static void _wait_until_tx_complete(void) {
 //                                ^^^^^^^^^^^^^^^^^^^^
 // 136 is at position 255 in buffer and gets read as 12, sometimes 0,...
 
-static uint8_t buffer[0xFF];  // another 256 bytes :-(
-static uint8_t head = 0;
-static uint8_t tail = 0;
+volatile static uint8_t buffer[0xFF];  // another 256 bytes :-(
+         static uint8_t head = 0;
+volatile static uint8_t tail = 0;
 
 // interrupt vector for handling reception of a single byte
 ISR (USARTx_RX_vect) {
