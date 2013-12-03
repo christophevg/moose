@@ -11,7 +11,8 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-void clock_init(void);
+void          clock_init(void);
 unsigned long clock_get_millis(void);
+void          clock_adjust(long);
 
 #endif

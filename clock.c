@@ -9,7 +9,7 @@
 
 #include "clock.h"
 
-static unsigned long ticks = 0;
+volatile static unsigned long ticks = 0;
 
 void clock_init(void) { 
   // Clock Speed (8000000) / PreScaler(64) = 125000
@@ -25,6 +25,10 @@ void clock_init(void) {
 
 unsigned long clock_get_millis(void) {
   return ticks;
+}
+
+void clock_adjust(long diff) {
+  ticks += diff;
 }
 
 ISR (TIMER1_COMPB_vect) {
