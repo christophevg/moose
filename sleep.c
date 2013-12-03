@@ -24,7 +24,7 @@ void sleep_init(void) {
   sei();
 }
 
-void sleep_ms(uint32_t ms)  {
+void sleep_ms(long ms)  {
   // TODO: dynamically changing the watchdog's time-out doesn't seem to work
   //       for now only 1 second resolution ;-)
   uint32_t step;

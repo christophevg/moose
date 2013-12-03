@@ -4,5 +4,5 @@
 // support for sleeping
 // based on: http://www.gammon.com.au/forum/?id=11497
 
-void sleep_ms(uint32_t ms);
+void sleep_ms(long ms);
 void sleep_init(void);
