@@ -12,6 +12,8 @@
 
 #include <util/delay.h>
 
+#include "clock.h"
+
 #include "sleep.h"
 
 // watchdog interrupt
@@ -24,10 +26,11 @@ void sleep_init(void) {
   sei();
 }
 
-void sleep_ms(long ms)  {
+void sleep_ms(long sleep)  {
   // TODO: dynamically changing the watchdog's time-out doesn't seem to work
   //       for now only 1 second resolution ;-)
-  uint32_t step;
+  long step,
+       ms = sleep;
   
   // to avoid garbage (e.g. on serial)
   _delay_ms(10);
@@ -95,4 +98,6 @@ void sleep_ms(long ms)  {
     
     ms = ms - step;
   }
+  // while sleeping, our clock stood still, adjust this before returning :-)
+  clock_adjust(sleep);
 }
