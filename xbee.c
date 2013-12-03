@@ -4,6 +4,7 @@
 // functions to access an XBee S2/ZB from AVR
 
 #include "xbee.h"
+#include "clock.h"
 
 #include <avr/interrupt.h>
 
@@ -17,6 +18,7 @@ static void    _receive_rx(uint8_t);
 static void    _send_at(uint8_t, uint8_t, xbee_at_handler_t);
 static void    _receive_at(uint8_t);
 static void    _check_ai(void);
+static void    _receive_ai_response(unsigned long);
 static bool    _ai_success(void);
 static void    _handle_ai_response(uint8_t, uint8_t);
 static void    _start_tx_checksum(void);
@@ -71,9 +73,10 @@ void xbee_wakeup(void) {
 // wrapper around the AI AT command check
 void xbee_wait_for_association(void) {
   do {
-    _delay_ms(10);    // really needed and it _must_ be here :-(
+    // _delay_ms(10);
     _check_ai();
-    xbee_receive();
+    _receive_ai_response(100L);
+    // xbee_receive();
   } while( ! _ai_success() );
 }
 
@@ -149,7 +152,7 @@ void xbee_receive(void) {
         debug_printf("WARNING: received unsupported packet type: %i\n", type);
     }
   }
-  debug_printf("no more data...\n");
+  // debug_printf("no more data...\n");
 }
 
 // RX packet support
@@ -209,12 +212,32 @@ static void _receive_rx(uint8_t size) {
 
 // global AI response
 static uint8_t ai_response;
+static bool    ai_response_received;
 
 // functional function to initiate an AI check
 static void _check_ai(void) {
-  debug_printf("sending AI\n");
+  printf("sending AI\n");
   ai_response = XB_AT_AI_SCANNING; // seems most logical non-ok default value
+  ai_response_received = FALSE;
   _send_at('A', 'I', _handle_ai_response);
+}
+
+static void _receive_ai_response(unsigned long timeout) {
+  unsigned long start = clock_get_millis();
+  printf("starting wait for ai response at %lu\n", start);
+    
+  while((clock_get_millis() - start) < timeout) {
+    xbee_receive();
+    if( ai_response_received ) {
+      debug_printf("got ai response at %lu\n", clock_get_millis());
+      return;
+    }
+    // printf("time = %lu = %lu till timeout\n",
+    //             clock_get_millis(),
+    //             (start + timeout) - clock_get_millis() );
+  }
+  // timeout
+  debug_printf("timeout at %lu\n", clock_get_millis());
 }
 
 // callback for handling AI responses
@@ -223,6 +246,7 @@ static void _handle_ai_response(uint8_t status, uint8_t response) {
   if(status == XB_AT_OK) {
     ai_response = response;
   }
+  ai_response_received = TRUE;
 }
 
 // function to check for successful association
