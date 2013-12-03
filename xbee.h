@@ -15,13 +15,6 @@
 #include "bool.h"
 #include "avr.h"
 
-// compute baud rate setting
-#ifndef BAUD
-#define BAUD 9600
-#endif
-
-#include <util/setbaud.h>
-
 // magic bytes
 
 // internal

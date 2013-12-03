@@ -12,7 +12,12 @@ void serial_init(void) {
   // make RX pin input pin by clearing it
   avr_clear_bit(SERIAL_RX_PORT, SERIAL_RX_PIN);
 
-  // Thanks: http://www.appelsiini.net/2011/simple-usart-with-avr-libc
+  // compute baud rate setting
+  // thanks: http://www.appelsiini.net/2011/simple-usart-with-avr-libc
+  #undef BAUD
+  #define BAUD 9600
+  #include <util/setbaud.h>
+
   UBRRsH = UBRRH_VALUE;
   UBRRsL = UBRRL_VALUE;
 

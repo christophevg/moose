@@ -6,13 +6,6 @@
 #ifndef __SERIAL_H
 #define __SERIAL_H
 
-// compute baud rate setting
-#ifndef BAUD
-#define BAUD 9600
-#endif
-
-#include <util/setbaud.h>
-
 #include <stdio.h>
 #include <avr/io.h>
 

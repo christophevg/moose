@@ -33,8 +33,13 @@ static void    _receive_modem(uint8_t size);
 void xbee_init(void) {
   // make RX pin input pin by clearing it
   avr_clear_bit(XBEE_RX_PORT, XBEE_RX_PIN);
-
-  // Thanks: http://www.appelsiini.net/2011/simple-usart-with-avr-libc
+  
+  // compute baud rate setting
+  // thanks: http://www.appelsiini.net/2011/simple-usart-with-avr-libc
+  #undef BAUD
+  #define BAUD 9600
+  #include <util/setbaud.h>
+  
   UBRRxH = UBRRH_VALUE;
   UBRRxL = UBRRL_VALUE;
 
