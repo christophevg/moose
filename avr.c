@@ -31,7 +31,7 @@ uint16_t avr_adc_read(uint8_t ch) {
   // of ‘ch’ between 0 and 7
   // ch &= 0b00000111;            // AND operation with 7
   // this trick doesn't work with 0b00000101 ;-)
-  if( ch < 0 ) { ch = 0; } else if( ch > 5 ) { ch = 5; }
+  if( ch > 5 ) { ch = 5; }
   ADMUX = (ADMUX & 0xF8) | ch; // clears the bottom 3 bits before ORing
 
   // start single convertion
@@ -41,7 +41,7 @@ uint16_t avr_adc_read(uint8_t ch) {
   // wait for conversion to complete
   // ADSC becomes ’0′ again
   // till then, run loop continuously
-  while( ADCSRA & (1 << ADSC) );
+  do {} while( ADCSRA & (1 << ADSC) );
 
   // clear ADIF by writing one to it
   avr_set_bit(ADCSRA, ADIF);
