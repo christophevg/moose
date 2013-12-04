@@ -106,7 +106,7 @@
 #endif
 
 // pin mapping
-
+// TODO: externalize this
 #define XBEE_SLEEP_PORT PORTD
 #define XBEE_SLEEP_PIN  4
 
