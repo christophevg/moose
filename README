@@ -1,0 +1,56 @@
+moose
+Christophe VG <contact@christophe.vg>
+
+---
+
+This repository contains code that I've collected and adapted while exploring
+the wonderful embedded world of AVR CMU's and many other components that can be
+attached to it to form a complete embedded system.
+
+Until further notice, all this code is targeted at the ATMEGA168/328 and the
+ATMEGA1284p Accompanying information can be found at different pages on
+http://christophe.vg/embedded
+
+USAGE
+
+The repository is meant to be put as a directory (subrepository) along side an
+actual project. It contains a Makefile that can be re-used. With the following
+directory structure your project files can be instrumented as follows:
+
+my-project/
+           moose
+           main.c
+           Makefile
+
+main.c:
+
+  #include "moose/avr.h"
+  ...
+
+Makefile:
+
+  # additional modules to compile
+  MORE_SRC = moose/avr.c moose/clock.c moose/sleep.c moose/serial.c moose/xbee.c
+
+  # the target MCU and its speed
+  MCU=atmega1284p
+  F_CPU=8000000
+
+  # which programmer to use
+  AVRDUDE_PROGRAMMER=jtag2
+
+  # external hardware composition ... yummie :-)
+  MORE_CDEFS=-DSERIAL_ON_USART1 # -DXBEE_ON_USART0 == default
+
+  include moose/Makefile
+
+  # to make sure that the moose directory is also cleaned/rebuilt
+  clean: clean_avr
+  clean_avr:
+      @(cd moose; $(MAKE) clean)
+
+FAQ
+
+Q What does MOOSE stand for?
+A Until the package fits the name, that's something from the past. Consider it
+  just a name ;-)
