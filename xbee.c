@@ -197,7 +197,7 @@ static void _receive_rx(uint8_t size) {
   }
 
   // create a frame and have it taken care of
-  frame.size       = size;
+  frame.size       = size-12; // return actual payload size (excluding headers)
   frame.address    = address;
   frame.nw_address = nw_address;
   frame.options    = options;
