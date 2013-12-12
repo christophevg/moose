@@ -375,13 +375,6 @@ static void _wait_until_tx_complete(void) {
 
 // internal buffering of received bytes using cyclic buffer and interrupts
 // TODO: overflow detection
-// TODO: fix (weird) bug
-//                                       vvvvvvvvvvvvvvvvvvvvv
-// buffer: head = 252 tail = 6 : 126 0 6 136 103 65 73 0 0 134 126 0 6 136 ...
-// WARNING: received unsupported packet type: 12
-// buffer: head = 255 tail = 16 : 12 103 65 73 0 0 134 126 0 6 136 ...
-//                                ^^^^^^^^^^^^^^^^^^^^
-// 136 is at position 255 in buffer and gets read as 12, sometimes 0,...
 
 volatile static uint8_t buffer[0xFF];  // another 256 bytes :-(
          static uint8_t head = 0;
