@@ -93,7 +93,7 @@ void xbee_send(xbee_tx_t *frame) {
     _send_byte(frame->id);
 
     // 64-bit address (MSB -> LSB)
-    for(uint8_t i=56;i>0;i-=8) {
+    for(int8_t i=56;i>0;i-=8) {
       _send_byte(frame->address >> i);
     }
     _send_byte(frame->address);
@@ -177,7 +177,7 @@ static void _receive_rx(uint8_t size) {
     _receive_byte();                  // frame type is part of the checksum
 
     // 64-bit address (MSB -> LSB)
-    for(uint8_t i=56; i>=0; i-=8) {
+    for(int8_t i=56; i>=0; i-=8) {
       address |= _receive_byte() << i;
     }
 
