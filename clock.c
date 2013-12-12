@@ -7,6 +7,9 @@
 
 // TODO: make this ATMEGA1284p-only code useable on ATMEGA8 & co
 
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
 #include "clock.h"
 
 volatile static unsigned long ticks = 0;
