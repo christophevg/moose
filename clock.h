@@ -8,8 +8,10 @@
 #ifndef __CLOCK_H
 #define __CLOCK_H
 
-void          clock_init(void);
-unsigned long clock_get_millis(void);
-void          clock_adjust(long);
+#define time_t unsigned long
+
+void   clock_init(void);
+time_t clock_get_millis(void);
+void   clock_adjust(long);
 
 #endif

@@ -12,7 +12,7 @@
 
 #include "clock.h"
 
-volatile static unsigned long ticks = 0;
+volatile static time_t ticks = 0;
 
 void clock_init(void) { 
   // Clock Speed (8000000) / PreScaler(64) = 125000
@@ -26,7 +26,7 @@ void clock_init(void) {
   TIMSK1 |= (1 << OCIE1B);               // enable CTC interrupt 
 } 
 
-unsigned long clock_get_millis(void) {
+time_t clock_get_millis(void) {
   return ticks;
 }
 
