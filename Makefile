@@ -23,6 +23,11 @@ ifndef AVRDUDE_PROGRAMMER
 	AVRDUDE_PROGRAMMER = jtag2isp
 endif
 
+# defining the include path
+ifndef INCLUDE_PATH
+	INCLUDE_PATH=.
+endif
+
 # output format. (can be srec, ihex, binary)
 FORMAT = ihex
 
@@ -102,8 +107,8 @@ COPY = cp
 
 # combine all necessary flags and optional flags.
 # add target processor to flags.
-ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
-ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
+ALL_CFLAGS = -mmcu=$(MCU) -I$(INCLUDE_PATH) $(CFLAGS)
+ALL_ASFLAGS = -mmcu=$(MCU) -I$(INCLUDE_PATH) -x assembler-with-cpp $(ASFLAGS)
 
 # default target.
 all: build sizeafter
