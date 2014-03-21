@@ -15,6 +15,9 @@
 volatile static time_t ticks = 0;
 
 void clock_init(void) { 
+  // turn on interrupts
+  sei();
+
   // Clock Speed (8000000) / PreScaler(64) = 125000
   // * timeout (0.001sec)                  = 125
   // - 1                                   = 124
