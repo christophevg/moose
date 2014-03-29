@@ -18,9 +18,17 @@ static void    _receive_rx(uint8_t);
 static void    _send_at(uint8_t, uint8_t, xbee_at_handler_t);
 static void    _receive_at(uint8_t);
 static void    _check_ai(void);
+static void    _get_my(void);
+static void    _get_mp(void);
 static void    _receive_ai_response(unsigned long);
+static void    _receive_my_response(unsigned long);
+static void    _receive_mp_response(unsigned long);
 static bool    _ai_success(void);
-static void    _handle_ai_response(uint8_t, uint8_t);
+static bool    _my_success(void);
+static bool    _mp_success(void);
+static void    _handle_ai_response(uint8_t, uint8_t*);
+static void    _handle_my_response(uint8_t, uint8_t*);
+static void    _handle_mp_response(uint8_t, uint8_t*);
 static void    _start_tx_checksum(void);
 static void    _start_rx_checksum(void);
 static void    _send_checksum(void);
@@ -76,6 +84,15 @@ void xbee_wait_for_association(void) {
     _check_ai();
     _receive_ai_response(100L); // typical delay is 40ms
   } while( ! _ai_success() );
+  // once we're associated, we want to fetch our own nw address and our parent's
+  do {
+    _get_my();
+    _receive_my_response(100L);
+  } while( ! _my_success() );
+  do {
+    _get_mp();
+    _receive_mp_response(100L);
+  } while( ! _mp_success() );
 }
 
 // sends a frame
@@ -167,9 +184,9 @@ void xbee_on_receive(xbee_rx_handler_t handler) {
 static void _receive_rx(uint8_t size) {
   xbee_rx_t frame;
 
-  uint64_t  address;
-  uint16_t  nw_address;
-  uint8_t   options;
+  uint64_t  address    = 0;
+  uint16_t  nw_address = 0;
+  uint8_t   options    = 0;
   uint8_t  *data = (uint8_t*)malloc(size-12); // 12 bytes are protocol overhead
 
   _start_rx_checksum();
@@ -235,10 +252,10 @@ static void _receive_ai_response(unsigned long timeout) {
 }
 
 // callback for handling AI responses
-static void _handle_ai_response(uint8_t status, uint8_t response) {
-  debug_printf("AI response = %i - %i\n", status, response);
+static void _handle_ai_response(uint8_t status, uint8_t* response) {
+  debug_printf("AI response = %i - %i\n", status, response[0]);
   if(status == XB_AT_OK) {
-    ai_response = response;
+    ai_response = response[0];
   }
   ai_response_received = TRUE;
 }
@@ -246,6 +263,87 @@ static void _handle_ai_response(uint8_t status, uint8_t response) {
 // function to check for successful association
 static bool _ai_success(void) {
   return ai_response == XB_AT_AI_SUCCESS;
+}
+
+// MY = own network address
+static uint16_t nw_address = 0xFFFE;
+static bool     my_response_received;
+
+uint16_t xbee_get_nw_address(void) {
+  return nw_address;
+}
+
+static void _get_my(void) {
+  debug_printf("sending MY\n");
+  my_response_received = FALSE;
+  _send_at('M', 'Y', _handle_my_response);
+}
+
+static void _receive_my_response(unsigned long timeout) {
+  unsigned long stop = clock_get_millis() + timeout;
+  debug_printf("starting wait for MY response at %lu\n", stop - timeout);
+  while(clock_get_millis() < stop) {
+    xbee_receive();
+    if( my_response_received ) {
+      debug_printf("got MY response at %lu\n", clock_get_millis());
+      return;
+    }
+  }
+  // timeout occured
+  debug_printf("timeout waiting for MY response (%lu)\n", clock_get_millis());
+}
+
+// callback for handling MY responses
+static void _handle_my_response(uint8_t status, uint8_t* response) {
+  debug_printf("MY response = %i - %02x%02x\n", status, response[0], response[1]);
+  if(status == XB_AT_OK) {
+    nw_address = response[1] | (response[0] << 8);
+  }
+  my_response_received = TRUE;
+}
+
+static bool _my_success(void) {
+  return nw_address != 0xFFFE;
+}
+
+// MP = parent's network address
+static uint16_t parent_address = 0xFFFE;
+static bool     mp_response_received;
+
+uint16_t xbee_get_parent_address(void) {
+  return parent_address;
+}
+
+static void _get_mp(void) {
+  debug_printf("sending MP\n");
+  mp_response_received = FALSE;
+  _send_at('M', 'P', _handle_mp_response);
+}
+
+static void _receive_mp_response(unsigned long timeout) {
+  unsigned long stop = clock_get_millis() + timeout;
+  debug_printf("starting wait for MP response at %lu\n", stop - timeout);
+  while(clock_get_millis() < stop) {
+    xbee_receive();
+    if( mp_response_received ) {
+      debug_printf("got MP response at %lu\n", clock_get_millis());
+      return;
+    }
+  }
+  // timeout occured
+  debug_printf("timeout waiting for MP response (%lu)\n", clock_get_millis());
+}
+
+static void _handle_mp_response(uint8_t status, uint8_t* response) {
+  debug_printf("MP response = %i - %02x%02x\n", status, response[0], response[1]);
+  if(status == XB_AT_OK) {
+    parent_address = response[1] | (response[0] << 8);
+  }
+  mp_response_received = TRUE;
+}
+
+static bool _mp_success(void) {
+  return parent_address != 0xFFFE;
 }
 
 // cyclic buffer of handlers for at responses
@@ -284,7 +382,7 @@ static void _send_at(uint8_t ch1, uint8_t ch2, xbee_at_handler_t handler) {
 static void _receive_at(uint8_t size) {
   uint8_t id;
   uint8_t status;
-  uint8_t data = 0;
+  uint8_t* data = NULL;
 
   _start_rx_checksum();
   {
@@ -295,12 +393,16 @@ static void _receive_at(uint8_t size) {
     status = _receive_byte();
 
     if(size - 5 > 0) {        // command data available ?
-      data = _receive_byte();
+      data = malloc((size-5)*sizeof(uint8_t));
+      for(uint8_t i=0; i<size-5; i++) {
+        data[i] = _receive_byte();
+      }
     }
   }
   if( _rx_checksum_isvalid() ) {
     (*(at_handlers[id]))(status, data);
   }
+  if(data != NULL) { free(data); }
 }
 
 // modem status support

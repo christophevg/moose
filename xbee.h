@@ -135,7 +135,7 @@ typedef struct {
 typedef void (*xbee_rx_handler_t)(xbee_rx_t *frame);
 
 // AT response handler type
-typedef void (*xbee_at_handler_t)(uint8_t status, uint8_t respsonse);
+typedef void (*xbee_at_handler_t)(uint8_t status, uint8_t* respsonse);
 
 // functions
 
@@ -148,5 +148,8 @@ void xbee_wait_for_association(void);
 void xbee_send(xbee_tx_t *frame);
 void xbee_receive(void);
 void xbee_on_receive(xbee_rx_handler_t handler);
+
+uint16_t xbee_get_nw_address(void);
+uint16_t xbee_get_parent_address(void);
 
 #endif
