@@ -338,12 +338,12 @@ static void _handle_mp_response(uint8_t status, uint8_t* response) {
   debug_printf("MP response = %i - %02x%02x\n", status, response[0], response[1]);
   if(status == XB_AT_OK) {
     parent_address = response[1] | (response[0] << 8);
+    mp_response_received = TRUE;
   }
-  mp_response_received = TRUE;
 }
 
 static bool _mp_success(void) {
-  return parent_address != 0xFFFE;
+  return mp_response_received; // parent_address != 0xFFFE; <-- routers
 }
 
 // cyclic buffer of handlers for at responses
@@ -376,6 +376,7 @@ static void _send_at(uint8_t ch1, uint8_t ch2, xbee_at_handler_t handler) {
   at_handler_id++;
 
   _wait_until_tx_complete();
+  debug_printf("at tx complete\n");
 }
 
 // generic handling of AT responses, dispatched by xbee_receive
