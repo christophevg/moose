@@ -152,4 +152,12 @@ void xbee_on_receive(xbee_rx_handler_t handler);
 uint16_t xbee_get_nw_address(void);
 uint16_t xbee_get_parent_address(void);
 
+typedef struct {
+  uint16_t bytes;
+  uint16_t frames;
+} xbee_metrics_t;
+
+void xbee_reset_counters(void);
+xbee_metrics_t xbee_get_counters(void);
+
 #endif

@@ -36,6 +36,18 @@ static bool    _rx_checksum_isvalid(void);
 static void    _buffer_info(void);
 static void    _receive_modem(uint8_t size);
 
+// metrics support
+xbee_metrics_t metrics = { .bytes = 0, .frames = 0 };
+
+void xbee_reset_counters(void) {
+  metrics.bytes  = 0;
+  metrics.frames = 0;
+}
+
+xbee_metrics_t xbee_get_counters(void) {
+  return metrics;
+}
+
 // public interface
 
 // initialization, uses generic register names that should be defined in the
@@ -129,6 +141,9 @@ void xbee_send(xbee_tx_t *frame) {
   }
   _send_checksum();
   
+  metrics.frames++;
+  metrics.bytes += frame->size + 14 + 2; // +2 = start delim and checksum
+
   _wait_until_tx_complete();
 }
 
