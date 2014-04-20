@@ -35,6 +35,7 @@ static void    _send_checksum(void);
 static bool    _rx_checksum_isvalid(void);
 static void    _buffer_info(void);
 static void    _receive_modem(uint8_t size);
+static void    _receive_transmit_status(uint8_t size);
 
 // metrics support
 xbee_metrics_t metrics = { .bytes = 0, .frames = 0 };
@@ -107,6 +108,8 @@ void xbee_wait_for_association(void) {
   } while( ! _mp_success() );
 }
 
+uint8_t frame_id = 1;
+
 // sends a frame
 void xbee_send(xbee_tx_t *frame) {
   _send_byte(XB_FRAME_START);
@@ -119,7 +122,7 @@ void xbee_send(xbee_tx_t *frame) {
   {
     _send_byte(XB_TX_PACKET);       // frame type = transmit
   
-    _send_byte(frame->id);
+    _send_byte(frame_id++);
 
     // 64-bit address (MSB -> LSB)
     for(int8_t i=56;i>0;i-=8) {
@@ -172,14 +175,15 @@ void xbee_receive(void) {
     uint8_t type = _peek_byte();
 
     switch( type ) {
-      case XB_RX_PACKET    : _receive_rx(size);    break;
-      case XB_RX_AT        : _receive_at(size);    break;
-      case XB_MODEM_STATUS : _receive_modem(size); break;
+      case XB_RX_PACKET       : _receive_rx(size);              break;
+      case XB_RX_AT           : _receive_at(size);              break;
+      case XB_MODEM_STATUS    : _receive_modem(size);           break;
+      case XB_TRANSMIT_STATUS : _receive_transmit_status(size); break;
 
       case XB_FRAME_START  : break; // this happens, let's not lose a packet
 
       default:
-        debug_printf("WARNING: received unsupported packet type: %i\n", type);
+        printf("WARNING: received unsupported packet type: %i\n", type);
     }
   }
   // debug_printf("no more data...\n");
@@ -445,6 +449,30 @@ static void _receive_modem(uint8_t size) {
     debug_printf("modem status: %i\n", status);
   }
 }
+
+// TX status support
+
+static void _receive_transmit_status(uint8_t size) {
+
+  uint8_t id, addr_h, addr_l, retries, delivery, discovery;
+
+  _start_rx_checksum();
+  {
+    _receive_byte();        // frame type is part of the checksum
+
+    id        = _receive_byte();
+    addr_h    = _receive_byte();
+    addr_l    = _receive_byte();
+    retries   = _receive_byte();
+    delivery  = _receive_byte();
+    discovery = _receive_byte();
+  }
+  if( _rx_checksum_isvalid() && delivery != 0x00) {
+    printf("transmission failed: %d (%02x %02x) %d : %02x  / %02x\n",
+           id, addr_h, addr_l, retries, delivery, discovery);
+  }
+}
+
 
 // checksumming support
 
