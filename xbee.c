@@ -491,42 +491,42 @@ static void _wait_until_tx_complete(void) {
   do {} while(tx_in_progress);
 }
 
-// internal buffering of received bytes using cyclic buffer and interrupts
-// TODO: overflow detection
+// cyclic IO buffers
+typedef struct {
+  volatile uint8_t head;
+  volatile uint8_t tail;
+  volatile uint8_t buffer[0xff];
+} cyclic_buffer_t;
 
-volatile static uint8_t buffer[0xFF];  // another 256 bytes :-(
-         static uint8_t head = 0;
-volatile static uint8_t tail = 0;
+cyclic_buffer_t incoming = {0, 0, {0}};
 
 // interrupt vector for handling reception of a single byte
 ISR (USARTx_RX_vect) {
-  buffer[tail++] = UDRx;
+  incoming.buffer[incoming.tail++] = UDRx;
 }
 
 // blocking !
 static uint8_t _receive_byte(void) {
   while( ! _data_available() );
-
-  rx_checksum += buffer[head];
-
-  return buffer[head++];
+  rx_checksum += incoming.buffer[incoming.head];
+  return incoming.buffer[incoming.head++];
 }
 
 // blocking !
 static uint8_t _peek_byte(void) {
   while( ! _data_available() );
 
-  return buffer[head];
+  return incoming.buffer[incoming.head];
 }
 
 static bool _data_available(void) {
-  return head != tail;
+  return incoming.head != incoming.tail;
 }
 
 static void _buffer_info(void) {
-  debug_printf("buffer: head = %i tail = %i : ", head, tail);
-  for(uint8_t i=head;i!=tail;i++) {
-    debug_printf("%i ", buffer[i]);
+  debug_printf("buffer: head = %i : ", incoming.head);
+  for(uint8_t i=incoming.head;i!=incoming.tail;i++) {
+    debug_printf("%i ", incoming.buffer[i]);
   }
-  debug_printf("\n");
+  debug_printf(" / tail = %i\n", incoming.tail);
 }
