@@ -182,7 +182,7 @@ void xbee_receive(void) {
         debug_printf("WARNING: received unsupported packet type: %i\n", type);
     }
   }
-  debug_printf("no more data...\n");
+  // debug_printf("no more data...\n");
 }
 
 // RX packet support
