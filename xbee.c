@@ -3,6 +3,8 @@
 
 // functions to access an XBee S2/ZB from AVR
 
+#include <stdio.h>
+
 #include "xbee.h"
 #include "clock.h"
 
