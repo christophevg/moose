@@ -158,7 +158,7 @@ typedef struct {
   uint16_t frames;
 } xbee_metrics_t;
 
-void xbee_reset_counters(void);
+xbee_metrics_t xbee_reset_counters(void);
 xbee_metrics_t xbee_get_counters(void);
 
 #endif

@@ -42,9 +42,11 @@ static void    _receive_transmit_status(uint8_t size);
 // metrics support
 xbee_metrics_t metrics = { .bytes = 0, .frames = 0 };
 
-void xbee_reset_counters(void) {
+xbee_metrics_t xbee_reset_counters(void) {
+  xbee_metrics_t old = metrics;
   metrics.bytes  = 0;
   metrics.frames = 0;
+  return old;
 }
 
 xbee_metrics_t xbee_get_counters(void) {
