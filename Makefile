@@ -87,7 +87,7 @@ MATH_LIB = -lm
 LDFLAGS = -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += $(MATH_LIB)
 # This adds support for printf with float
-# LDFLAGS += -lm -lprintf_flt -Wl,-u,vfprintf -Wl,-Map=$(TARGET).map
+LDFLAGS += -lm -lprintf_flt -Wl,-u,vfprintf -Wl,-Map=$(TARGET).map
 
 # avrdude
 AVRDUDE_PORT = usb:5a:cb
