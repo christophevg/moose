@@ -40,7 +40,7 @@ static void    _receive_modem(uint8_t size);
 static void    _receive_transmit_status(uint8_t size);
 
 // metrics support
-xbee_metrics_t metrics = { .bytes = 0, .frames = 0 };
+volatile xbee_metrics_t metrics;
 
 xbee_metrics_t xbee_reset_counters(void) {
   xbee_metrics_t old = metrics;
@@ -82,6 +82,8 @@ void xbee_init(void) {
   // https://sites.google.com/site/qeewiki/books/avr-guide/usart  
   UCSRxB |= (1 << RXCIEx);            // enable RX interrupt to accept bytes
   UCSRxB |= (1 << TXCIEx);            // enable TX interrupt to see EOT
+  
+  xbee_reset_counters();
 }
 
 // power down XBee by setting its sleep pin high
