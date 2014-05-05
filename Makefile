@@ -157,18 +157,22 @@ clean:
 .SECONDARY : $(TARGET).elf
 .PRECIOUS : $(OBJ)
 %.elf: $(OBJ)
-	$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS)
+	@echo "--- linking $@"
+	@$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS)
 
 # compile: create object files from C source files.
 %.o : %.c
-	$(CC) -c $(ALL_CFLAGS) $< -o $@ 
+	@echo "--- compiling $<"
+	@$(CC) -c $(ALL_CFLAGS) $< -o $@
 
 # compile: create assembler files from C source files.
 %.s : %.c
-	$(CC) -S $(ALL_CFLAGS) $< -o $@
+	@echo "--- generating assembler for $<"
+	@$(CC) -S $(ALL_CFLAGS) $< -o $@
 
 # assemble: create object files from assembler source files.
 %.o : %.S
-	$(CC) -c $(ALL_ASFLAGS) $< -o $@
+	@echo "--- assembling $<"
+	@$(CC) -c $(ALL_ASFLAGS) $< -o $@
 
 .PHONY : all build elf hex eep lss sym sizeafter program clean
