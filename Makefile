@@ -139,19 +139,24 @@ clean:
 
 # create final output files (.hex, .eep) from ELF output file.
 %.hex: %.elf
-	$(OBJCOPY) -O $(FORMAT) -R .eeprom $< $@
+	@echo "--- creating HEX image"
+	@$(OBJCOPY) -O $(FORMAT) -R .eeprom $< $@
 
 %.eep: %.elf
-	-$(OBJCOPY) -j .eeprom --set-section-flags=.eeprom="alloc,load" \
-	--change-section-lma .eeprom=0 -O $(FORMAT) $< $@
+	@echo "--- creating EEPROM"
+	@-$(OBJCOPY) -j .eeprom --set-section-flags=.eeprom="alloc,load" \
+		 -O $(FORMAT) $< $@
+# --change-section-lma .eeprom=0
 
 # create extended listing file from ELF output file.
 %.lss: %.elf
-	$(OBJDUMP) -h -S $< > $@
+	@echo "--- creating extended listing file"
+	@$(OBJDUMP) -h -S $< > $@
 
 # create a symbol table from ELF output file.
 %.sym: %.elf
-	$(NM) -n $< > $@
+	@echo "--- creating symbol table"
+	@$(NM) -n $< > $@
 
 # link: create ELF output file from object files.
 .SECONDARY : $(TARGET).elf
