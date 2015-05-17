@@ -224,12 +224,12 @@ static void _receive_rx(uint8_t size) {
             | ((uint64_t)(_receive_byte()) << 32)
             | ((uint64_t)(_receive_byte()) << 24)
             | ((uint64_t)(_receive_byte()) << 16)
-            | (_receive_byte() <<  8)
-            | (_receive_byte());
+            | ((uint64_t)(_receive_byte()) <<  8)
+            | ((uint64_t)(_receive_byte()));
 
     // 16bit network address
-    nw_address = (_receive_byte() << 8)
-               | (_receive_byte());
+    nw_address = ((uint16_t)(_receive_byte()) << 8)
+               | ((uint16_t)(_receive_byte()));
 
     options = _receive_byte();
   
