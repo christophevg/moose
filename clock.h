@@ -10,8 +10,11 @@
 
 #define time_t unsigned long
 
+volatile time_t current_millis;
+
 void   clock_init(void);
-time_t clock_get_millis(void);
-void   clock_adjust(long);
+
+#define clock_get_millis() current_millis
+#define clock_adjust(diff) (current_millis += diff)
 
 #endif

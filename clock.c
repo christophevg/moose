@@ -12,9 +12,7 @@
 
 #include "clock.h"
 
-volatile static time_t ticks = 0;
-
-void clock_init(void) { 
+void clock_init(void) {
   // turn on interrupts
   sei();
 
@@ -29,14 +27,6 @@ void clock_init(void) {
   TIMSK1 |= (1 << OCIE1B);               // enable CTC interrupt 
 } 
 
-time_t clock_get_millis(void) {
-  return ticks;
-}
-
-void clock_adjust(long diff) {
-  ticks += diff;
-}
-
 ISR (TIMER1_COMPB_vect) {
-  ticks++;
+  current_millis++;
 }
