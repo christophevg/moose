@@ -540,7 +540,7 @@ typedef struct {
   volatile uint8_t buffer[0xff];
 } cyclic_buffer_t;
 
-cyclic_buffer_t incoming = {0, 0, {0}};
+volatile cyclic_buffer_t incoming = {0, 0, {0}};
 
 // interrupt vector for handling reception of a single byte
 ISR (USARTx_RX_vect) {
