@@ -83,6 +83,9 @@ void xbee_init(void) {
   UCSRxB |= (1 << RXCIEx);            // enable RX interrupt to accept bytes
   UCSRxB |= (1 << TXCIEx);            // enable TX interrupt to see EOT
   
+  // enable interrupts
+  sei();
+
   xbee_reset_counters();
 }
 
