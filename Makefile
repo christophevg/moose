@@ -180,4 +180,14 @@ clean:
 	@echo "--- assembling $<"
 	@$(CC) -c $(ALL_ASFLAGS) $< -o $@
 
-.PHONY : all build elf hex eep lss sym sizeafter program clean
+# special support
+
+test:
+	gcc -Wall -c -pedantic nmea.c
+	gcc -Wall -c test_nmea.c
+	gcc -o test_nmea nmea.o test_nmea.o
+	chmod +x ./test_nmea
+	./test_nmea
+	rm ./test_nmea
+
+.PHONY : all build elf hex eep lss sym sizeafter program clean test
