@@ -21,8 +21,9 @@
 
 // two simple macros to turn on/off bits on a PORT/PIN
 // taken from tutorial by Sparkfun
-#define avr_set_bit(var, mask) ((var) |= (uint8_t)(1 << mask))
-#define avr_clear_bit(var, mask) ((var) &= (uint8_t)~(1 << mask))
+#define avr_set_bit   (port, pin) ((port) |= (uint8_t) (1 << pin))
+#define avr_clear_bit (port, pin) ((port) &= (uint8_t)~(1 << pin))
+#define avr_bit_is_set(port, pin) ((port) &  (uint8_t) (1 << pin))
 
 // elementary functions for handling the AVR/ATMEGA MCU
 void     avr_init(void);
