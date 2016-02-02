@@ -3,6 +3,7 @@ TARGET             ?= main
 MCU                ?= atmega328p
 F_CPU              ?= 18000000
 MORE_SRC           ?=
+MORE_CDEFS         ?=
 AVRDUDE_PROGRAMMER ?= jtag2isp
 INCLUDE_PATH       ?= .
 
@@ -29,9 +30,7 @@ CSTANDARD = -std=gnu99
 CDEFS = -DF_CPU=$(F_CPU)UL
 # providing the MCU
 CDEFS += -DMCU=$(MCU)
-#ifdef MORE_CDEFS
-	CDEFS += $(MORE_CDEFS)
-#endif
+CDEFS += $(MORE_CDEFS)
 
 # compiler options
 #  -O*:          optimization level
