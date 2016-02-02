@@ -1,32 +1,10 @@
-# each module needs a starting point/target
-ifndef TARGET
-	TARGET = main
-endif
-
-# MCU name (avrdude profile)
-ifndef MCU
-	MCU = atmega328p
-endif
-
-# processor frequency depends on project
-ifndef F_CPU
-	F_CPU = 18000000
-endif
-
-# additional sources to be compiled
-ifndef MORE_SRC
-	MORE_SRC =
-endif
-
-# changing the programming protocol
-ifndef AVRDUDE_PROGRAMMER
-	AVRDUDE_PROGRAMMER = jtag2isp
-endif
-
-# defining the include path
-ifndef INCLUDE_PATH
-	INCLUDE_PATH=.
-endif
+# configuration parameters
+TARGET             ?= main
+MCU                ?= atmega328p
+F_CPU              ?= 18000000
+MORE_SRC           ?=
+AVRDUDE_PROGRAMMER ?= jtag2isp
+INCLUDE_PATH       ?= .
 
 # output format. (can be srec, ihex, binary)
 FORMAT = ihex
